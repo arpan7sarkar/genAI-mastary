@@ -1,0 +1,14 @@
+{
+  "name": "system-promting",
+  "version": "1.0.0",
+  "description": "learning system prompting using openAi",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "openai": "^5.15.0"
+  }
+}
