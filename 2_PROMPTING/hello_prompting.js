@@ -14,7 +14,7 @@ async function main() {
             {"role":"user","content":"Whats my name?"},
             {"role":"assistant","content":"Your name is Arpan, how can i help you?"},
             {"role":"user","content":"Write a poem on my name in 2 lines"}/* output Arpan’s name, a gentle light so bright,  
-Guiding hearts with warmth and pure delight. */
+            Guiding hearts with warmth and pure delight. */
             /*You may ask here i am using so many tokens so the cost should be more right? but here is the catch. 
             almost all tokens except the last one had been count as  cathced token its coth is 10 times cheaper then a normal token*/
         ]
