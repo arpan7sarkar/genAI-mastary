@@ -7,7 +7,7 @@ async function main() {
     //for fixing it we have to write multiple contexts for both user and assitant(in other words we need to write multipe messages)
 
     const response=await client.chat.completions.create({
-        model:"gpt-4.1-nano",
+        model:"gpt-5-nano",
         messages:[
             {"role":"user","content":"My name is Arpan"},
             {"role":"assistant","content":"Oh hello Arpan.How can i help you?"},

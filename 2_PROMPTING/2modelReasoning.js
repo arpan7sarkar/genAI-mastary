@@ -155,7 +155,7 @@ async function main() {
   while (true) {
     try {
       const response = await client.chat.completions.create({
-        model: "gpt-4.1-nano",
+        model: "gpt-5-nano",
         messages: messages,
       });
 
