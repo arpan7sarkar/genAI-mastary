@@ -1,10 +1,7 @@
 import "dotenv/config";
 import { OpenAI } from "openai";
 
-const client = new OpenAI({
-    apiKey: process.env.GEMINI_API_KEY,
-    baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/",
-});
+const client = new OpenAI();
 const SYSTEM_PROMPT = `
     You are an AI assistant who works on START , THINK , OUTPUT format .
     For a give user query at first you THINK and breakdown the problems into sub problems.
@@ -38,17 +35,40 @@ const SYSTEM_PROMPT = `
 `;
 
 const main = async () => {
-  const response = await client.chat.completions.create({
-    model: "gemini-2.5-flash",
-    // model:"gpt-5-mini",
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      {
-        role: "user",
-        content: "Hey can you solve this math problem 585-2*98+9/44*32-8^3",
-      },
-    ],
-  });
-  console.log(response.choices[0].message.content);
+  const messages = [
+    { role: "system", content: SYSTEM_PROMPT },
+    {
+      role: "user",
+      content: "What is the purpose of our existance?",
+    },
+  ];
+  while (true) {
+    const response = await client.chat.completions.create({
+    //   model: "gemini-2.5-flash",
+      model:"gpt-4.1-mini",
+      messages: messages,
+    });
+    const rawContent = response.choices[0].message.content;
+    const parsedContent = JSON.parse(rawContent);
+    messages.push({
+      role: "assistant",
+      content: JSON.stringify(parsedContent),
+    });
+
+    if (parsedContent.step === "START") {
+      console.log(`🔥`, parsedContent.content);
+      continue;
+    }
+    if (parsedContent.step === "THINK") {
+      console.log(`🧠`, parsedContent.content);
+      continue;
+    }
+    if (parsedContent.step === "OUTPUT") {
+      console.log(`✅`, parsedContent.content);
+      break;
+    }
+  }
+  console.log();
 };
 main();
+
