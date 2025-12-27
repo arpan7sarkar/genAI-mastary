@@ -1,23 +1,36 @@
-import 'dotenv/config';
-import { OpenAI } from 'openai';
-import axios from 'axios';
-import { log } from 'console';
+import "dotenv/config";
+import { OpenAI } from "openai";
+import axios from "axios";
+import { log } from "console";
 const client = new OpenAI();
 
-async function getWeatherDetailsByCity(city="") {
-    const url = `https://wttr.in/${city.toLowerCase()}?format=%C+%t`;
-    const {data}=await axios.get(url,{responseType:'text'})
-    return `The weather in ${city} is ${data}.`
+async function getWeatherDetailsByCity(city = "") {
+  const url = `https://wttr.in/${city.toLowerCase()}?format=%C+%t`;
+  const { data } = await axios.get(url, { responseType: "text" });
+  return `The weather in ${city} is ${data}.`;
 }
+async function getDetailsViaGithubUsername(username = "") {
+  const url = `https://api.github.com/users/${username}`;
+  const { data } = await axios.get(url);
+  return JSON.stringify({
+    login: data.login,
+    name: data.name,
+    location: data.location,
+    twitter_username: data.username,
+    public_repos: data.public_repos,
+    followers: data.followers,
+    following: data.following
+  }, null, 5);
+}
+
 
 // getWeatherDetailsByCity("Kolkata").then(console.log);
 const TOOL_MAP = {
-    getWeatherDetailsByCity:getWeatherDetailsByCity,
+  getWeatherDetailsByCity: getWeatherDetailsByCity,
+  getDetailsViaGithubUsername: getDetailsViaGithubUsername,
+};
 
-}
-
-
-async function main(ask="") {
+async function main(ask = "") {
   const SYSTEM_PROMPT = `
     You are an AI assistant who works on START, THINK and OUTPUT format.
     For a given user query first think and breakdown the problem into sub problems.
@@ -28,7 +41,7 @@ async function main(ask="") {
     
     Available tools:
         -getWeatherDetailsByCity(city:string): Returns the current weather data of the city
-
+        -getDetailsViaGithubUsername(city:string): Returns the user details of the github user via username 
 
     Rules:
     - Strictly follow the output JSON format
@@ -70,18 +83,18 @@ async function main(ask="") {
 
   const messages = [
     {
-      role: 'system',
+      role: "system",
       content: SYSTEM_PROMPT,
     },
     {
-      role: 'user',
+      role: "user",
       content: ask,
     },
   ];
 
   while (true) {
     const response = await client.chat.completions.create({
-      model: 'gpt-4.1-mini',
+      model: "gpt-4.1-mini",
       messages: messages,
     });
 
@@ -89,50 +102,50 @@ async function main(ask="") {
     const parsedContent = JSON.parse(rawContent);
 
     messages.push({
-      role: 'assistant',
+      role: "assistant",
       content: JSON.stringify(parsedContent),
     });
 
-    if (parsedContent.step === 'START') {
+    if (parsedContent.step === "START") {
       console.log(`🔥`, parsedContent.content);
       continue;
     }
 
-    if (parsedContent.step === 'THINK') {
+    if (parsedContent.step === "THINK") {
       console.log(`\t🧠`, parsedContent.content);
 
       continue;
     }
-    if (parsedContent.step === 'TOOL') {
-      const toolToCall= parsedContent.toolName;
-      if(!TOOL_MAP[toolToCall]){
+    if (parsedContent.step === "TOOL") {
+      const toolToCall = parsedContent.toolName;
+      if (!TOOL_MAP[toolToCall]) {
         messages.push({
-            "role":"developer",
-            content:`There is no such tool avilable as ${toolToCall}`
-            
-        })
+          role: "developer",
+          content: `There is no such tool avilable as ${toolToCall}`,
+        });
         continue;
       }
 
-      const responceFromTool=await TOOL_MAP[toolToCall](parsedContent.input)
+      const responceFromTool = await TOOL_MAP[toolToCall](parsedContent.input);
 
-      console.log(`🛠️:${toolToCall}(${parsedContent.input})= ${responceFromTool}`);
-      
+      console.log(
+        `🛠️:${toolToCall}(${parsedContent.input})= ${responceFromTool}`
+      );
+
       messages.push({
-            "role":"developer",
-            content:JSON.stringify({step:"observe",content:responceFromTool})
-            
-        })
-        continue;
+        role: "developer",
+        content: JSON.stringify({ step: "observe", content: responceFromTool }),
+      });
+      continue;
     }
 
-    if (parsedContent.step === 'OUTPUT') {
+    if (parsedContent.step === "OUTPUT") {
       console.log(`🤖`, parsedContent.content);
       break;
     }
   }
 
-  console.log('Done...');
+  console.log("Done...");
 }
 
-main("what is the current weather of Barasat");
+main("Tell me about this guy arpan his github username is arpan7sarkar");
