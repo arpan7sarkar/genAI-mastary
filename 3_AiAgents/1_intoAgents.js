@@ -10,28 +10,49 @@ async function getWeatherDetailsByCity(city="") {
     return `The weather in ${city} is ${data}.`
 }
 
-getWeatherDetailsByCity("Barasat").then(console.log);
+// getWeatherDetailsByCity("Kolkata").then(console.log);
+const TOOL_MAP = {
+    getWeatherDetailsByCity:getWeatherDetailsByCity,
+
+}
 
 
-
-async function main() {
+async function main(ask="") {
   const SYSTEM_PROMPT = `
     You are an AI assistant who works on START, THINK and OUTPUT format.
     For a given user query first think and breakdown the problem into sub problems.
     You should always keep thinking and thinking before giving the actual output.
     Also, before outputing the final result to user you must check once if everything is correct.
+    You also have few tools that you can use as per user query.
+    For tool call that you make wait for the OBSERVATION from the tool which is the responce from the tool that you called.
     
+    Available tools:
+        -getWeatherDetailsByCity(city:string): Returns the current weather data of the city
+
+
     Rules:
     - Strictly follow the output JSON format
     - Always follow the output in sequence that is START, THINK, EVALUATE and OUTPUT.
     - Always perform only one step at a time and wait for other step.
     - Alway make sure to do multiple steps of thinking before giving out output.
+    - For every tool call wait for the OBSERVE which contain the output from the tool    
 
     Output JSON Format:
-    { "step": "START | THINK  | OUTPUT", "content": "string" }
+    { "step": "START | THINK  | OUTPUT | OBSERVE | TOOL", "content": "string", "input" : "string", "toolName" : "string" }
 
     Example:
-    User: Can you solve 3 + 4 * 10 - 4 * 3
+    1. User: Hey can you tell me the weather of Kolkata
+    ASSISTANT: { "step": "START", "content": "The user is interested on knowing the current weather of Kolkata" } 
+    ASSISTANT: { "step": "THINK", "content": "Let me see if there are any tool avialable for this query   " } 
+    ASSISTANT: { "step": "THINK", "content": "I see there is a tool avilable getWeatherDetailsByCity for this query" } 
+    ASSISTANT: { "step": "THINK", "content": "I need to call for city Kolkata for get weather details" }
+    ASSISTANT: { "step": "TOOL", "input":"kolkata","toolName":"getWeatherDetailsByCity" } 
+    DEVELOPER: { "step": "OBSERVE", "content": "The weather of Kolkata is 22°C and Hazy" } 
+    ASSISTANT: {"step":"THINK","content":"Great I got the weather details of Kolkata"}
+    ASSISTANT: { "step": "OUTPUT", "content": "So the weather in Kolkata is 22°C and Hazy , so this is a great time to tour through the place" } 
+
+
+   2.  User: Can you solve 3 + 4 * 10 - 4 * 3
     ASSISTANT: { "step": "START", "content": "The user wants me to solve 3 + 4 * 10 - 4 * 3 maths problem" } 
     ASSISTANT: { "step": "THINK", "content": "This is typical math problem where we use BODMAS formula for calculation" } 
     ASSISTANT: { "step": "THINK", "content": "Lets breakdown the problem step by step" } 
@@ -54,13 +75,13 @@ async function main() {
     },
     {
       role: 'user',
-      content: 'Write a code in JS to find a prime number as fast as possible',
+      content: ask,
     },
   ];
 
   while (true) {
     const response = await client.chat.completions.create({
-      model: 'gpt-5-nano',
+      model: 'gpt-4.1-mini',
       messages: messages,
     });
 
@@ -82,6 +103,28 @@ async function main() {
 
       continue;
     }
+    if (parsedContent.step === 'TOOL') {
+      const toolToCall= parsedContent.toolName;
+      if(!TOOL_MAP[toolToCall]){
+        messages.push({
+            "role":"developer",
+            content:`There is no such tool avilable as ${toolToCall}`
+            
+        })
+        continue;
+      }
+
+      const responceFromTool=await TOOL_MAP[toolToCall](parsedContent.input)
+
+      console.log(`🛠️:${toolToCall}(${parsedContent.input})= ${responceFromTool}`);
+      
+      messages.push({
+            "role":"developer",
+            content:JSON.stringify({step:"observe",content:responceFromTool})
+            
+        })
+        continue;
+    }
 
     if (parsedContent.step === 'OUTPUT') {
       console.log(`🤖`, parsedContent.content);
@@ -92,4 +135,4 @@ async function main() {
   console.log('Done...');
 }
 
-// main();
+main("what is the current weather of Barasat");
